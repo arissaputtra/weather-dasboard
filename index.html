@@ -1,0 +1,1296 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Samosir Telemetry & Control</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+
+    <style>
+        :root {
+            --bg-main: #0B101E;
+            --bg-card: #151B2B;
+            --border-color: #2D3748;
+            --text-main: #FFFFFF;
+            --text-muted: #A0AEC0;
+            --accent-blue: #3B82F6;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+        }
+
+        h1,h2,h3,h4,h5,h6,.text-white { color:#FFFFFF !important; }
+        .text-muted { color:var(--text-muted) !important; }
+
+        .card-custom {
+            background-color:var(--bg-card);
+            border:1px solid var(--border-color);
+            border-radius:20px;
+            padding:1.8rem;
+            margin-bottom:1.5rem;
+            box-shadow:0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .card-summary {
+            background-color:var(--bg-card);
+            border:1px solid var(--border-color);
+            border-radius:20px;
+            padding:1.5rem;
+            height:100%;
+            transition:all .3s ease;
+        }
+        .card-summary:hover {
+            transform:translateY(-5px);
+            border-color:var(--accent-blue);
+            box-shadow:0 10px 20px rgba(59,130,246,.1);
+        }
+
+        .icon-box {
+            width:38px;height:38px;border-radius:10px;
+            display:flex;justify-content:center;align-items:center;font-size:1.1rem;
+        }
+
+        .c-blue{color:#60A5FA !important}.bg-blue-light{background-color:rgba(59,130,246,.15)}
+        .c-green{color:#34D399 !important}.bg-green-light{background-color:rgba(16,185,129,.15)}
+        .c-orange{color:#F97316 !important}.bg-orange-light{background-color:rgba(249,115,22,.15)}
+        .c-purple{color:#A78BFA !important}.bg-purple-light{background-color:rgba(167,139,250,.15)}
+        .c-yellow{color:#FBBF24 !important}.bg-yellow-light{background-color:rgba(251,191,36,.15)}
+        .c-cyan{color:#22D3EE !important}.bg-cyan-light{background-color:rgba(34,211,238,.15)}
+
+        .card-title-custom {
+            font-size:1.2rem;font-weight:700;display:flex;align-items:center;
+            gap:12px;margin-bottom:1.5rem;color:#fff;
+        }
+
+        .control-group {
+            background-color:rgba(15,23,42,.6);
+            border:1px solid var(--border-color);
+            border-radius:12px;padding:1.2rem;margin-bottom:1.2rem;
+        }
+
+        .slider-label {font-size:.95rem;font-weight:500;color:#E2E8F0;margin-bottom:8px;display:block}
+        .slider-val-container {font-size:1.5rem;font-weight:800;color:#fff}
+        .slider-val-container span {color:var(--accent-blue)}
+        .form-range {height:6px}
+        .form-range::-webkit-slider-thumb {
+            background:var(--accent-blue);width:20px;height:20px;margin-top:-7px;
+            box-shadow:0 0 10px rgba(59,130,246,.5)
+        }
+
+        .master-filter {
+            background-color:#0F172A;border-radius:20px;padding:6px;display:inline-flex;
+            border:1px solid var(--border-color);gap:5px;flex-wrap:wrap;
+        }
+        .btn-filter {
+            background-color:transparent;color:var(--text-muted);border:none;border-radius:15px;
+            padding:8px 20px;font-size:.9rem;font-weight:600;transition:all .2s;
+        }
+        .btn-filter:hover {color:#fff}
+        .btn-filter.active {
+            background-color:#2563EB;color:#fff;box-shadow:0 2px 8px rgba(37,99,235,.4)
+        }
+
+        .form-switch .form-check-input {
+            width:4em;height:2em;background-color:#4A5568;border:2px solid #2D3748;cursor:pointer
+        }
+        .form-switch .form-check-input:checked {background-color:#10B981;border-color:#059669}
+        .switch-label {font-size:1.2rem;font-weight:700;letter-spacing:.5px}
+
+        .chart-container {position:relative;height:320px;width:100%}
+        hr {border-color:#2D3748;opacity:1}
+
+        #dataStatus {
+            font-size:.8rem;
+            color:#718096;
+            margin-top:4px;
+        }
+
+        .loading-dot {
+            display:inline-block;width:8px;height:8px;border-radius:50%;
+            background:#3B82F6;animation:pulse 1.2s infinite ease-in-out;
+        }
+        @keyframes pulse {
+            0%,100%{opacity:.25;transform:scale(.8)}
+            50%{opacity:1;transform:scale(1)}
+        }
+    
+/* ===== APP SIDEBAR / HAMBURGER ===== */
+.menu-btn-app{width:46px;height:46px;border:1px solid #273246;background:#111827;color:#fff;border-radius:13px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:.2s;flex:0 0 auto}.menu-btn-app:hover{background:#172033;transform:translateY(-1px)}.menu-btn-app i{font-size:1.12rem}.sidebar-backdrop-app{position:fixed;inset:0;background:rgba(2,6,23,.58);opacity:0;visibility:hidden;transition:.22s;z-index:1090}.sidebar-backdrop-app.open{opacity:1;visibility:visible}.app-sidebar{position:fixed;left:0;top:0;bottom:0;width:290px;background:#101726;border-right:1px solid #263247;transform:translateX(-102%);transition:.25s;z-index:1100;padding:18px;box-shadow:20px 0 45px rgba(0,0,0,.28)}.app-sidebar.open{transform:translateX(0)}.sidebar-brand-app{display:flex;align-items:center;gap:12px;padding:8px 4px 18px;border-bottom:1px solid #263247;margin-bottom:14px}.sidebar-brand-app .icon{width:44px;height:44px;border-radius:13px;background:#2563EB;display:flex;align-items:center;justify-content:center;color:#fff}.sidebar-brand-app strong{display:block;color:#fff}.sidebar-brand-app span{display:block;color:#7FA9F9;font-size:.72rem;font-weight:800;letter-spacing:.5px}.sidebar-close-app{margin-left:auto;width:34px;height:34px;border-radius:10px;border:1px solid #334155;background:#111827;color:#94A3B8;cursor:pointer}.sidebar-section-app{color:#64748B;font-size:.72rem;font-weight:800;letter-spacing:1px;text-transform:uppercase;margin:14px 8px 8px}.sidebar-link-app{width:100%;display:flex;align-items:center;gap:12px;color:#CBD5E1;text-decoration:none;border:1px solid transparent;background:transparent;border-radius:13px;padding:12px 13px;margin-bottom:6px;font-weight:600}.sidebar-link-app:hover{background:#172033;color:#fff}.sidebar-link-app.active{background:#1B2A49;border-color:#29477C;color:#60A5FA}.sidebar-link-app i{width:20px;text-align:center}body.sidebar-open-app{overflow:hidden}@media(max-width:768px){.app-sidebar{width:85vw;max-width:320px}}
+
+/* ===== WEATHER API WIDGET ===== */
+.weather-api-card{background:linear-gradient(135deg,#111a2c,#151b2b);border:1px solid #2d3748;border-radius:20px;padding:22px;margin-bottom:28px}.weather-api-title{display:flex;align-items:center;gap:12px;font-weight:800;font-size:1.2rem}.weather-api-sub{color:#94a3b8;font-size:.82rem}.weather-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-top:16px}.weather-item{background:#0f172a;border:1px solid #273246;border-radius:14px;padding:14px}.weather-item .label{display:block;color:#94a3b8;font-size:.72rem;text-transform:uppercase;letter-spacing:.7px}.weather-item .value{display:block;color:#fff;font-weight:800;font-size:1.35rem;margin-top:5px}.weather-api-foot{margin-top:12px;color:#64748b;font-size:.75rem}@media(max-width:1000px){.weather-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:600px){.weather-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style>
+</head>
+
+<div class="sidebar-backdrop-app" id="sidebarBackdropApp" onclick="closeSidebarApp()"></div>
+<aside class="app-sidebar" id="appSidebar">
+  <div class="sidebar-brand-app">
+    <div class="icon"><i class="fa-solid fa-microchip"></i></div>
+    <div><strong>ESP32 Telemetri</strong><span>NODE HUB</span></div>
+    <button class="sidebar-close-app" onclick="closeSidebarApp()" aria-label="Tutup menu"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+  <div class="sidebar-section-app">Menu Utama</div>
+  <a class="sidebar-link-app active" href="index.html"><i class="fa-solid fa-chart-line"></i><span>Telemetri &amp; Kontrol</span></a>
+  <a class="sidebar-link-app" href="riwayat.html"><i class="fa-solid fa-clock-rotate-left"></i><span>Riwayat Database</span></a>
+  <a class="sidebar-link-app" href="perbandingan.html"><i class="fa-solid fa-cloud-sun"></i><span>Sensor vs API Cuaca</span></a>
+</aside>
+<body>
+
+<div class="container-fluid py-4 px-lg-5">
+    <div class="d-flex align-items-center mb-5">
+        <button class="menu-btn-app me-3" onclick="openSidebarApp()" aria-label="Buka menu"><i class="fa-solid fa-bars"></i></button>
+        <div style="width:50px;height:50px;background:#2563EB;border-radius:14px;display:flex;justify-content:center;align-items:center;margin-right:18px;box-shadow:0 4px 15px rgba(37,99,235,.4)">
+            <i class="fa-solid fa-satellite-dish text-white fs-4"></i>
+        </div>
+        <div>
+            <h2 class="m-0 fw-bold text-white">Samosir Telemetri</h2>
+            <div class="text-muted" style="font-weight:500;font-size:1.05rem">Master Node Control Center</div>
+        </div>
+        <div class="ms-auto text-end">
+            <div id="dataStatus"><span class="loading-dot me-1"></span> Menyiapkan data...</div>
+            <div id="adminStatus" style="font-size:.78rem;color:#718096;margin-top:4px">Kontrol terkunci</div>
+        </div>
+    </div>
+
+    <!-- SUMMARY -->
+    <div class="row mb-5">
+        <div class="col-xl col-lg-4 col-md-6 mb-4"><div class="card-summary"><div class="d-flex justify-content-between align-items-start mb-3"><span class="text-muted fw-bold" style="font-size:.85rem;letter-spacing:1px">SUHU UDARA</span><div class="icon-box bg-blue-light"><i class="fa-solid fa-temperature-half c-blue"></i></div></div><h2 class="fw-bold mb-2 text-white" id="sum_temp">-- <span class="fs-5 text-muted">°C</span></h2><div class="c-blue fw-bold fs-6" id="stat_temp">Min/Max: -- / --</div></div></div>
+        <div class="col-xl col-lg-4 col-md-6 mb-4"><div class="card-summary"><div class="d-flex justify-content-between align-items-start mb-3"><span class="text-muted fw-bold" style="font-size:.85rem;letter-spacing:1px">SUHU TANAH</span><div class="icon-box bg-orange-light"><i class="fa-solid fa-temperature-three-quarters c-orange"></i></div></div><h2 class="fw-bold mb-2 text-white" id="sum_soil_temp">-- <span class="fs-5 text-muted">°C</span></h2><div class="c-orange fw-bold fs-6" id="stat_soil_temp">Min/Max: -- / --</div></div></div>
+        <div class="col-xl col-lg-4 col-md-6 mb-4"><div class="card-summary"><div class="d-flex justify-content-between align-items-start mb-3"><span class="text-muted fw-bold" style="font-size:.85rem;letter-spacing:1px">KELEMBAPAN UDARA</span><div class="icon-box bg-green-light"><i class="fa-solid fa-droplet c-green"></i></div></div><h2 class="fw-bold mb-2 text-white" id="sum_hum">-- <span class="fs-5 text-muted">%</span></h2><div class="c-green fw-bold fs-6" id="stat_hum">Avg: --%</div></div></div>
+        <div class="col-xl col-lg-4 col-md-6 mb-4"><div class="card-summary"><div class="d-flex justify-content-between align-items-start mb-3"><span class="text-muted fw-bold" style="font-size:.85rem;letter-spacing:1px">SOIL MOISTURE</span><div class="icon-box bg-orange-light"><i class="fa-solid fa-seedling c-orange"></i></div></div><h2 class="fw-bold mb-2 text-white" id="sum_soil">-- <span class="fs-5 text-muted">%</span></h2><div class="c-orange fw-bold fs-6" id="stat_soil">Avg: --%</div></div></div>
+        <div class="col-xl col-lg-4 col-md-6 mb-4"><div class="card-summary"><div class="d-flex justify-content-between align-items-start mb-3"><span class="text-muted fw-bold" style="font-size:.85rem;letter-spacing:1px">TEKANAN UDARA</span><div class="icon-box bg-purple-light"><i class="fa-solid fa-cloud c-purple"></i></div></div><h2 class="fw-bold mb-2 text-white" id="sum_press">-- <span class="fs-6 text-muted">hPa</span></h2><div class="c-purple fw-bold fs-6" id="stat_press">Min/Max: -- / --</div></div></div>
+        <div class="col-xl col-lg-4 col-md-6 mb-4"><div class="card-summary"><div class="d-flex justify-content-between align-items-start mb-3"><span class="text-muted fw-bold" style="font-size:.85rem;letter-spacing:1px">ILUMINASI CAHAYA</span><div class="icon-box bg-yellow-light"><i class="fa-solid fa-sun c-yellow"></i></div></div><h2 class="fw-bold mb-2 text-white" id="sum_lux">-- <span class="fs-5 text-muted">Lx</span></h2><div class="c-yellow fw-bold fs-6" id="stat_lux">Max: -- Lx</div></div></div>
+        <div class="col-xl col-lg-4 col-md-6 mb-4"><div class="card-summary"><div class="d-flex justify-content-between align-items-start mb-3"><span class="text-muted fw-bold" style="font-size:.85rem;letter-spacing:1px">DAYA BATERAI</span><div class="icon-box bg-cyan-light"><i class="fa-solid fa-battery-full c-cyan"></i></div></div><h2 class="fw-bold mb-2 text-white" id="sum_batt">-- <span class="fs-5 text-muted">%</span></h2><div class="c-cyan fw-bold fs-6" id="stat_batt">Volt: -- V</div><hr class="my-3"><div class="text-muted fw-bold" style="font-size:.72rem;letter-spacing:.8px">SUHU INTERNAL ESP32</div><div class="fw-bold fs-4 text-white mt-1" id="sum_internal_temp">-- <span class="fs-6 text-muted">°C</span></div><div class="c-blue fw-bold" style="font-size:.78rem" id="stat_internal_temp">Avg: -- °C</div></div></div>
+    </div>
+
+
+    <!-- WEATHER API JANJI MARTAHAN -->
+    <div class="weather-api-card">
+        <div class="d-flex justify-content-between align-items-start gap-3">
+            <div>
+                <div class="weather-api-title"><i class="fa-solid fa-cloud-sun c-blue"></i> Cuaca Janji Martahan</div>
+                <div class="weather-api-sub">Harian, Samosir · Open-Meteo · otomatis mengikuti interval sensor</div>
+            </div>
+            <div class="text-end weather-api-sub" id="weatherApiTime">Memuat...</div>
+        </div>
+        <div class="weather-grid">
+            <div class="weather-item"><span class="label">Suhu</span><span class="value" id="apiTempNow">-- °C</span></div>
+            <div class="weather-item"><span class="label">Kelembapan</span><span class="value" id="apiHumNow">-- %</span></div>
+            <div class="weather-item"><span class="label">Tekanan</span><span class="value" id="apiPressNow">-- hPa</span></div>
+            <div class="weather-item"><span class="label">Hujan</span><span class="value" id="apiRainNow">--</span></div>
+            <div class="weather-item"><span class="label">Angin</span><span class="value" id="apiWindNow">-- km/h</span></div>
+            <div class="weather-item"><span class="label">Awan</span><span class="value" id="apiCloudNow">-- %</span></div>
+            <div class="weather-item"><span class="label">Kelembapan Tanah</span><span class="value" id="apiSoilNow">-- %</span></div>
+            <div class="weather-item"><span class="label">Radiasi</span><span class="value" id="apiSolarNow">-- W/m²</span></div>
+            <div class="weather-item"><span class="label">Interval API</span><span class="value" id="apiIntervalNow">-- s</span></div>
+            <div class="weather-item"><span class="label">Avg API</span><span class="value" id="apiAvgNow">-- s</span></div>
+        </div>
+        <div class="weather-api-foot">Koordinat referensi: 2.5393, 98.6770. Data disimpan di sheet <b>Weather_API</b>; perbandingan memakai timestamp terdekat agar sinkron.</div>
+    </div>
+
+    <!-- CONTROL -->
+    <div class="row mb-5">
+        <div class="col-xl-4 col-lg-5 mb-4">
+            <div class="card-custom h-100 d-flex flex-column">
+                <div class="card-title-custom"><i class="fa-solid fa-power-off c-blue fs-4"></i> Kontrol Irigasi & Sensor</div>
+                <div class="control-group text-center py-4 mb-4">
+                    <div class="form-check form-switch d-inline-flex align-items-center gap-3 m-0">
+                        <input class="form-check-input m-0" type="checkbox" role="switch" id="opModeSwitch">
+                        <label class="form-check-label switch-label text-danger" id="opModeLabel" for="opModeSwitch">Mode: MANUAL OFF</label>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-end mb-2"><span class="slider-label m-0">Interval Baca Sensor:</span><div class="slider-val-container"><span id="val_read">20</span> <small class="text-muted fs-6 fw-normal">detik</small></div></div>
+                        <input type="range" class="form-range" min="10" max="120" step="10" id="read_interval" oninput="document.getElementById('val_read').innerText=this.value">
+                    </div>
+                    <div class="mb-2">
+                        <div class="d-flex justify-content-between align-items-end mb-2"><span class="slider-label m-0">Jendela Rata-rata (Avg):</span><div class="slider-val-container"><span id="val_avg">60</span> <small class="text-muted fs-6 fw-normal">detik</small></div></div>
+                        <input type="range" class="form-range" min="20" max="300" step="10" id="avg_window" oninput="document.getElementById('val_avg').innerText=this.value">
+                    </div>
+                </div>
+                <button class="btn btn-primary w-100 fw-bold py-3 mt-auto fs-5" style="border-radius:12px" onclick="updateConfig()"><i class="fa-solid fa-floppy-disk me-2"></i>SIMPAN CONFIG</button>
+            </div>
+        </div>
+
+        <div class="col-xl-8 col-lg-7 mb-4">
+            <div class="card-custom h-100">
+                <div class="card-title-custom"><i class="fa-solid fa-clock c-purple fs-4"></i> Jadwal Transmisi Data</div>
+                <div class="mb-5 mt-3"><select class="form-select form-select-custom w-50" id="send_mode" onchange="toggleSendMode()"><option value="0">Mode 0: Kirim 3x Sehari (Spesifik Jam)</option><option value="1">Mode 1: Interval Berkala (Per Menit)</option></select></div>
+                <div id="panel_jam" class="control-group py-4 px-4"><div class="row text-center">
+                    <div class="col-md-4 border-end border-secondary"><span class="slider-label">Jam Transmisi 1</span><div class="slider-val-container my-3"><span id="val_h1" class="c-blue fs-1">19</span><span class="text-muted fs-4">:00</span></div><input type="range" class="form-range px-3" min="0" max="23" id="send_h1" oninput="document.getElementById('val_h1').innerText=this.value"></div>
+                    <div class="col-md-4 border-end border-secondary"><span class="slider-label">Jam Transmisi 2</span><div class="slider-val-container my-3"><span id="val_h2" class="c-blue fs-1">5</span><span class="text-muted fs-4">:00</span></div><input type="range" class="form-range px-3" min="0" max="23" id="send_h2" oninput="document.getElementById('val_h2').innerText=this.value"></div>
+                    <div class="col-md-4"><span class="slider-label">Jam Transmisi 3</span><div class="slider-val-container my-3"><span id="val_h3" class="c-blue fs-1">11</span><span class="text-muted fs-4">:00</span></div><input type="range" class="form-range px-3" min="0" max="23" id="send_h3" oninput="document.getElementById('val_h3').innerText=this.value"></div>
+                </div></div>
+                <div id="panel_menit" class="control-group py-5 text-center" style="display:none"><span class="slider-label fs-5 mb-3">Kirim Data Secara Berkala Setiap:</span><div class="slider-val-container mb-4"><span id="val_send_int" class="c-blue" style="font-size:3.5rem">10</span> <span class="text-muted fs-3">Menit</span></div><div class="px-5 mx-5"><input type="range" class="form-range" min="5" max="120" step="5" id="send_interval" oninput="document.getElementById('val_send_int').innerText=this.value"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <hr class="mb-5">
+
+    <!-- CHARTS -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3 px-2">
+        <div>
+            <h3 class="m-0 fw-bold text-white"><i class="fa-solid fa-chart-area text-primary me-2"></i>Analisis Telemetri</h3>
+            <span class="text-muted ms-5">Pilih range untuk viewport. Grafik tetap bisa digeser/zoom tanpa request ulang.</span>
+        </div>
+        <div class="d-flex gap-3 align-items-center">
+            <button class="btn btn-outline-secondary text-white fw-bold px-4" style="border-radius:12px" onclick="manualRefresh()"><i class="fa-solid fa-rotate-right me-2"></i>Refresh</button>
+            <div class="master-filter">
+                <button class="btn-filter" id="btn_1h" onclick="updateChartRange('1h')">1 Jam</button>
+                <button class="btn-filter active" id="btn_24h" onclick="updateChartRange('24h')">24 Jam</button>
+                <button class="btn-filter" id="btn_3d" onclick="updateChartRange('3d')">3 Hari</button>
+                <button class="btn-filter" id="btn_7d" onclick="updateChartRange('7d')">1 Minggu</button>
+                <button class="btn-filter" id="btn_30d" onclick="updateChartRange('30d')">1 Bulan</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-6"><div class="card-custom"><div class="card-title-custom"><i class="fa-solid fa-temperature-half c-blue fs-4"></i> Perbandingan Suhu (°C)</div><div class="chart-container"><canvas id="tempChart"></canvas></div></div></div>
+        <div class="col-lg-6"><div class="card-custom"><div class="card-title-custom"><i class="fa-solid fa-droplet c-green fs-4"></i> Perbandingan Kelembapan (%)</div><div class="chart-container"><canvas id="humChart"></canvas></div></div></div>
+        <div class="col-lg-6"><div class="card-custom"><div class="card-title-custom"><i class="fa-solid fa-cloud c-purple fs-4"></i> Tekanan Barometrik (hPa)</div><div class="chart-container"><canvas id="pressChart"></canvas></div></div></div>
+        <div class="col-lg-6"><div class="card-custom"><div class="card-title-custom"><i class="fa-solid fa-sun c-yellow fs-4"></i> Iluminasi Cahaya (Lux)</div><div class="chart-container"><canvas id="luxChart"></canvas></div></div></div>
+        <div class="col-lg-6"><div class="card-custom"><div class="card-title-custom"><i class="fa-solid fa-bolt c-cyan fs-4"></i> Tegangan Baterai (Volt)</div><div class="chart-container"><canvas id="battVoltChart"></canvas></div></div></div>
+        <div class="col-lg-6"><div class="card-custom"><div class="card-title-custom"><i class="fa-solid fa-battery-three-quarters text-success fs-4"></i> Kapasitas Baterai (%)</div><div class="chart-container"><canvas id="battPctChart"></canvas></div></div></div>
+        <div class="col-12"><div class="card-custom"><div class="card-title-custom"><i class="fa-solid fa-microchip c-blue fs-4"></i> Suhu Internal ESP32 (°C)</div><div class="chart-container"><canvas id="internalTempChart"></canvas></div></div></div>
+    </div>
+</div>
+
+<script>
+
+// ===== HAMBURGER MENU =====
+function openSidebarApp(){document.getElementById('appSidebar').classList.add('open');document.getElementById('sidebarBackdropApp').classList.add('open');document.body.classList.add('sidebar-open-app')}
+function closeSidebarApp(){document.getElementById('appSidebar').classList.remove('open');document.getElementById('sidebarBackdropApp').classList.remove('open');document.body.classList.remove('sidebar-open-app')}
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeSidebarApp()});
+
+// ============================================================
+// CONFIG
+// ============================================================
+const GAS_URL = "https://script.google.com/macros/s/AKfycbyxgrYcXSQiqbcpiijKnjG3QxrLdnBwsOUFmD_3nIVanCo6QjfGi9xMHFg6yMw9Snxg/exec";
+
+// SINGLE SOURCE OF TRUTH:
+// cukup ganti URL GAS di index.html.
+// Semua halaman lain membaca nilai ini dari localStorage.
+const SAMOSIR_CONFIG_KEY = "SAMOSIR_GAS_URL";
+localStorage.setItem(SAMOSIR_CONFIG_KEY, GAS_URL);
+
+// Cache browser: data boleh hidup 3 hari.
+const CACHE_VERSION = "v5";
+const CACHE_RETENTION = 3 * 24 * 60 * 60 * 1000;
+const CACHE_FRESH = 2 * 60 * 1000;
+
+// Timeout initial 24h dan background master dibuat lebih longgar.
+const FETCH_TIMEOUT_INITIAL = 20000;
+const FETCH_TIMEOUT_MASTER = 60000;
+
+// Background update saat halaman tetap terbuka.
+const BACKGROUND_REFRESH_MS = 5 * 60 * 1000;
+
+const CACHE_KEYS = {
+    initial24h: `samosir_initial_24h_${CACHE_VERSION}`,
+    master7d: `samosir_master_7d_${CACHE_VERSION}`,
+    master30d: `samosir_master_30d_${CACHE_VERSION}`
+};
+
+const CACHE_TIME_KEYS = {
+    initial24h: `samosir_initial_24h_${CACHE_VERSION}_time`,
+    master7d: `samosir_master_7d_${CACHE_VERSION}_time`,
+    master30d: `samosir_master_30d_${CACHE_VERSION}_time`
+};
+
+const RANGE_MS = {
+    "1h": 1 * 60 * 60 * 1000,
+    "24h": 24 * 60 * 60 * 1000,
+    "3d": 3 * 24 * 60 * 60 * 1000,
+    "7d": 7 * 24 * 60 * 60 * 1000,
+    "30d": 30 * 24 * 60 * 60 * 1000
+};
+
+let charts = {};
+let currentRange = '24h';
+let masterData = null;
+let masterKey = null;
+let fetchPromises = {};
+let backgroundTimer = null;
+let lastStatsUpdate = 0;
+let initial24hDisplayed = false;
+
+Chart.defaults.color = '#9CA3AF';
+Chart.defaults.font.family = 'Inter';
+
+// ============================================================
+// UI SWITCH
+// ============================================================
+document.getElementById('opModeSwitch').addEventListener('change', function () {
+    const label = document.getElementById('opModeLabel');
+    if (this.checked) {
+        label.innerText = 'Mode: AUTO (Aktif Jam 10-16)';
+        label.className = 'form-check-label switch-label text-success';
+    } else {
+        label.innerText = 'Mode: MANUAL OFF (Mati Total)';
+        label.className = 'form-check-label switch-label text-danger';
+    }
+});
+
+function toggleSendMode() {
+    const mode = document.getElementById('send_mode').value;
+    document.getElementById('panel_jam').style.display = mode === '0' ? 'block' : 'none';
+    document.getElementById('panel_menit').style.display = mode === '1' ? 'block' : 'none';
+}
+
+// ============================================================
+// FORMAT / CACHE
+// ============================================================
+function formatLabel(timestamp, range) {
+    const d = new Date(timestamp);
+    if (range === '30d') {
+        return d.toLocaleString('id-ID', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+    }
+    if (range === '7d' || range === '3d') {
+        return d.toLocaleString('id-ID', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+    }
+    return d.toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' });
+}
+
+function formatTooltip(timestamp) {
+    return new Date(timestamp).toLocaleString('id-ID', {
+        day:'2-digit', month:'2-digit', year:'numeric',
+        hour:'2-digit', minute:'2-digit', second:'2-digit'
+    });
+}
+
+function lowerBound(arr, target) {
+    let lo = 0;
+    let hi = arr.length;
+    while (lo < hi) {
+        const mid = (lo + hi) >> 1;
+        if (arr[mid] < target) lo = mid + 1;
+        else hi = mid;
+    }
+    return lo;
+}
+
+function getCache(key) {
+    try {
+        const raw = localStorage.getItem(CACHE_KEYS[key]);
+        const timeRaw = localStorage.getItem(CACHE_TIME_KEYS[key]);
+        if (!raw || !timeRaw) return null;
+
+        const age = Date.now() - Number(timeRaw);
+        if (!Number.isFinite(age) || age < 0 || age > CACHE_RETENTION) {
+            localStorage.removeItem(CACHE_KEYS[key]);
+            localStorage.removeItem(CACHE_TIME_KEYS[key]);
+            return null;
+        }
+
+        const data = JSON.parse(raw);
+        if (!data || !Array.isArray(data.timestamps) || data.timestamps.length === 0) {
+            return null;
+        }
+
+        return { data, age };
+    } catch (err) {
+        console.warn('Cache rusak:', key, err);
+        return null;
+    }
+}
+
+function saveCache(key, data) {
+    try {
+        localStorage.setItem(CACHE_KEYS[key], JSON.stringify(data));
+        localStorage.setItem(CACHE_TIME_KEYS[key], String(Date.now()));
+    } catch (err) {
+        console.warn('LocalStorage gagal / penuh:', key, err);
+    }
+}
+
+function setStatus(text, busy = false) {
+    document.getElementById('dataStatus').innerHTML = busy
+        ? `<span class="loading-dot me-1"></span> ${text}`
+        : `<i class="fa-solid fa-circle-check text-success me-1"></i> ${text}`;
+}
+
+async function fetchJSON(url, timeout) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeout);
+
+    try {
+        const res = await fetch(url, {
+            cache: 'no-store',
+            signal: controller.signal
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return await res.json();
+    } finally {
+        clearTimeout(timer);
+    }
+}
+
+function normalizeData(data) {
+    const n = Array.isArray(data.timestamps) ? data.timestamps.length : 0;
+    const result = {
+        timestamps: Array.isArray(data.timestamps) ? data.timestamps.map(Number) : [],
+        labels: Array.isArray(data.labels) ? data.labels.slice(0, n) : [],
+        internalTemp: [], airTemp: [], soilTemp: [], airHum: [], soilHum: [],
+        pressure: [], lux: [], battVolt: [], battPct: []
+    };
+
+    const fields = ['internalTemp','airTemp','soilTemp','airHum','soilHum','pressure','lux','battVolt','battPct'];
+    fields.forEach(field => {
+        result[field] = Array.isArray(data[field])
+            ? data[field].slice(0, n)
+            : new Array(n).fill(null);
+    });
+
+    if (result.labels.length !== n) {
+        result.labels = result.timestamps.map(ts => formatLabel(ts, currentRange));
+    }
+
+    result.range = data.range || '';
+    result.sample_step = data.sample_step || 1;
+    result.points = n;
+    return result;
+}
+
+// ============================================================
+// FETCH MASTER / INITIAL
+// ============================================================
+async function fetchRangeFromGAS(range, timeout, statusText = null) {
+    if (fetchPromises[range]) return fetchPromises[range];
+
+    const url = `${GAS_URL}?action=getChartData&range=${encodeURIComponent(range)}&_=${Date.now()}`;
+    if (statusText) setStatus(statusText, true);
+
+    fetchPromises[range] = fetchJSON(url, timeout)
+        .then(data => {
+            if (!data || !Array.isArray(data.timestamps)) {
+                throw new Error('Format data chart tidak valid');
+            }
+            return data;
+        })
+        .finally(() => {
+            delete fetchPromises[range];
+        });
+
+    return fetchPromises[range];
+}
+
+async function getInitial24h() {
+    const cached = getCache('initial24h');
+
+    if (cached) {
+        masterData = normalizeData(cached.data);
+        masterKey = '24h';
+        applyCurrentViewport(true);
+        setStatus(`Cache 24h · ${(cached.age / 60000).toFixed(0)} menit`, false);
+
+        // Cache 24h boleh dipakai langsung, lalu refresh diam-diam.
+        if (cached.age > CACHE_FRESH) {
+            fetchRangeFromGAS('24h', FETCH_TIMEOUT_INITIAL)
+                .then(data => {
+                    saveCache('initial24h', data);
+                    if (!initial24hDisplayed || currentRange === '24h') {
+                        masterData = normalizeData(data);
+                        masterKey = '24h';
+                        applyCurrentViewport(true);
+                    }
+                })
+                .catch(err => console.warn('Background 24h gagal:', err));
+        }
+
+        initial24hDisplayed = true;
+        return masterData;
+    }
+
+    const data = await fetchRangeFromGAS('24h', FETCH_TIMEOUT_INITIAL, 'Mengambil 24 jam terakhir...');
+    saveCache('initial24h', data);
+    masterData = normalizeData(data);
+    masterKey = '24h';
+    initial24hDisplayed = true;
+    applyCurrentViewport(true);
+    return masterData;
+}
+
+async function getMaster7d(force = false, silent = true) {
+    const cached = force ? null : getCache('master7d');
+
+    if (cached) {
+        masterData = normalizeData(cached.data);
+        masterKey = '7d';
+        if (currentRange !== '30d') applyCurrentViewport(true);
+
+        if (!force && cached.age <= CACHE_FRESH) {
+            return masterData;
+        }
+    }
+
+    const data = await fetchRangeFromGAS('7d', FETCH_TIMEOUT_MASTER, silent ? null : 'Mengambil master 7 hari...');
+    saveCache('master7d', data);
+    masterData = normalizeData(data);
+    masterKey = '7d';
+
+    if (currentRange !== '30d') applyCurrentViewport(true);
+    return masterData;
+}
+
+async function getMaster30d(force = false) {
+    const cached = force ? null : getCache('master30d');
+
+    if (cached) {
+        masterData = normalizeData(cached.data);
+        masterKey = '30d';
+        applyCurrentViewport(true);
+
+        if (!force && cached.age <= CACHE_FRESH) {
+            return masterData;
+        }
+    }
+
+    const data = await fetchRangeFromGAS('30d', FETCH_TIMEOUT_MASTER, 'Mengambil master 30 hari...');
+    saveCache('master30d', data);
+    masterData = normalizeData(data);
+    masterKey = '30d';
+    applyCurrentViewport(true);
+    return masterData;
+}
+
+// ============================================================
+// VIEWPORT
+// ============================================================
+function getViewportIndices(data, range) {
+    if (!data || !data.timestamps.length) return { min:0, max:0 };
+
+    const max = data.timestamps.length - 1;
+    const latest = data.timestamps[max];
+    const target = latest - RANGE_MS[range];
+    const min = Math.min(max, lowerBound(data.timestamps, target));
+
+    return { min, max };
+}
+
+function updateRangeButtons() {
+    ['1h','24h','3d','7d','30d'].forEach(id => {
+        const el = document.getElementById('btn_' + id);
+        if (el) el.classList.toggle('active', id === currentRange);
+    });
+}
+
+// ============================================================
+// CHART — dibuat satu kali saja
+// ============================================================
+function baseChartOptions(yMin = null, yMax = null) {
+    const scalesY = {
+        grid: { color:'#2D3748', drawBorder:false },
+        ticks: { color:'#A0AEC0', font:{size:11} }
+    };
+
+    if (yMin !== null) scalesY.suggestedMin = yMin;
+    if (yMax !== null) scalesY.suggestedMax = yMax;
+
+    return {
+        responsive:true,
+        maintainAspectRatio:false,
+        animation:false,
+        interaction:{ mode:'index', intersect:false },
+        plugins:{
+            legend:{
+                position:'top',
+                labels:{ color:'#F3F4F6', usePointStyle:true, boxWidth:8, font:{weight:'bold'} }
+            },
+            tooltip:{
+                backgroundColor:'rgba(15,23,42,.95)',
+                titleColor:'#fff', bodyColor:'#cbd5e1',
+                borderColor:'#334155', borderWidth:1, padding:12,
+                callbacks:{
+                    title: items => {
+                        if (!items.length || !masterData) return '';
+                        const idx = Math.max(0, Math.min(masterData.timestamps.length - 1, Number(items[0].dataIndex)));
+                        return formatTooltip(masterData.timestamps[idx]);
+                    }
+                }
+            },
+            zoom:{
+                pan:{
+                    enabled:true,
+                    mode:'x',
+                    onPanComplete: syncStatsFromCharts
+                },
+                zoom:{
+                    wheel:{enabled:true, speed:.05},
+                    pinch:{enabled:true},
+                    mode:'x',
+                    onZoomComplete: syncStatsFromCharts
+                }
+            }
+        },
+        scales:{
+            x:{
+                type:'category',
+                min:0,
+                max:10,
+                bounds:'ticks',
+                grid:{display:false},
+                ticks:{color:'#A0AEC0', maxTicksLimit:8, maxRotation:0, font:{size:11}}
+            },
+            y:scalesY
+        }
+    };
+}
+
+function makeDataset(label, color, background) {
+    return {
+        label,
+        data:[],
+        borderColor:color,
+        backgroundColor:background,
+        borderWidth:2.2,
+        pointRadius:0,
+        pointHoverRadius:5,
+        tension:.25,
+        fill:true,
+        spanGaps:true
+    };
+}
+
+function ensureCharts() {
+    if (charts.tempChart) return;
+
+    const labels = masterData ? masterData.timestamps.map(ts => formatLabel(ts, currentRange)) : [];
+    const d = masterData || {};
+    const empty = a => Array.isArray(a) ? a : [];
+
+    charts.tempChart = new Chart(document.getElementById('tempChart'), {
+        type:'line',
+        data:{labels:labels.slice(), datasets:[
+            {...makeDataset('Suhu Udara (AHT20)', '#3B82F6', 'rgba(59,130,246,.15)'), data:empty(d.airTemp).slice()},
+            {...makeDataset('Suhu Tanah (DS18B20)', '#F59E0B', 'rgba(245,158,11,.15)'), data:empty(d.soilTemp).slice()}
+        ]},
+        options:baseChartOptions()
+    });
+
+    charts.humChart = new Chart(document.getElementById('humChart'), {
+        type:'line',
+        data:{labels:labels.slice(), datasets:[
+            {...makeDataset('Udara (%)', '#10B981', 'rgba(16,185,129,.15)'), data:empty(d.airHum).slice()},
+            {...makeDataset('Tanah (%)', '#EA580C', 'rgba(234,88,12,.15)'), data:empty(d.soilHum).slice()}
+        ]},
+        options:baseChartOptions(0,100)
+    });
+
+    charts.pressChart = new Chart(document.getElementById('pressChart'), {
+        type:'line',
+        data:{labels:labels.slice(), datasets:[{...makeDataset('Tekanan Udara (hPa)', '#A78BFA', 'rgba(167,139,250,.15)'), data:empty(d.pressure).slice()}]},
+        options:baseChartOptions()
+    });
+
+    charts.luxChart = new Chart(document.getElementById('luxChart'), {
+        type:'line',
+        data:{labels:labels.slice(), datasets:[{...makeDataset('Iluminasi (Lux)', '#FBBF24', 'rgba(251,191,36,.15)'), data:empty(d.lux).slice()}]},
+        options:baseChartOptions(0,null)
+    });
+
+    charts.battVoltChart = new Chart(document.getElementById('battVoltChart'), {
+        type:'line',
+        data:{labels:labels.slice(), datasets:[{...makeDataset('Tegangan (V)', '#22D3EE', 'rgba(34,211,238,.15)'), data:empty(d.battVolt).slice()}]},
+        options:baseChartOptions(2.5,4.2)
+    });
+
+    charts.battPctChart = new Chart(document.getElementById('battPctChart'), {
+        type:'line',
+        data:{labels:labels.slice(), datasets:[{...makeDataset('Kapasitas (%)', '#4ADE80', 'rgba(74,222,128,.15)'), data:empty(d.battPct).slice()}]},
+        options:baseChartOptions(0,100)
+    });
+
+    charts.internalTempChart = new Chart(document.getElementById('internalTempChart'), {
+        type:'line',
+        data:{labels:labels.slice(), datasets:[{...makeDataset('Suhu Internal ESP32 (°C)', '#60A5FA', 'rgba(96,165,250,.15)'), data:empty(d.internalTemp).slice()}]},
+        options:baseChartOptions()
+    });
+}
+
+function applyCurrentViewport(resetZoom = true) {
+    if (!masterData || !masterData.timestamps.length) {
+        setStatus('Belum ada data telemetry', false);
+        return;
+    }
+
+    ensureCharts();
+
+    const labels = masterData.timestamps.map(ts => formatLabel(ts, currentRange));
+
+    charts.tempChart.data.labels = labels;
+    charts.tempChart.data.datasets[0].data = masterData.airTemp;
+    charts.tempChart.data.datasets[1].data = masterData.soilTemp;
+
+    charts.humChart.data.labels = labels;
+    charts.humChart.data.datasets[0].data = masterData.airHum;
+    charts.humChart.data.datasets[1].data = masterData.soilHum;
+
+    charts.pressChart.data.labels = labels;
+    charts.pressChart.data.datasets[0].data = masterData.pressure;
+
+    charts.luxChart.data.labels = labels;
+    charts.luxChart.data.datasets[0].data = masterData.lux;
+
+    charts.battVoltChart.data.labels = labels;
+    charts.battVoltChart.data.datasets[0].data = masterData.battVolt;
+
+    charts.battPctChart.data.labels = labels;
+    charts.battPctChart.data.datasets[0].data = masterData.battPct;
+
+    charts.internalTempChart.data.labels = labels;
+    charts.internalTempChart.data.datasets[0].data = masterData.internalTemp;
+
+    const vp = getViewportIndices(masterData, currentRange);
+
+    Object.values(charts).forEach(chart => {
+        if (resetZoom && chart.resetZoom) chart.resetZoom('none');
+        chart.options.scales.x.min = vp.min;
+        chart.options.scales.x.max = vp.max;
+        chart.update('none');
+    });
+
+    updateVisibleStats(vp.min, vp.max);
+
+    const first = masterData.timestamps[0];
+    const last = masterData.timestamps[masterData.timestamps.length - 1];
+    const availableHours = Math.max(0, (last - first) / 3600000);
+    const visibleStart = masterData.timestamps[vp.min];
+    const visibleHours = Math.max(0, (last - visibleStart) / 3600000);
+
+    setStatus(
+        `${masterKey.toUpperCase()} · ${masterData.timestamps.length.toLocaleString('id-ID')} titik · tersedia ${availableHours.toFixed(1)} jam · tampil ${visibleHours.toFixed(1)} jam`,
+        false
+    );
+}
+
+function syncStatsFromCharts() {
+    if (!masterData || !charts.tempChart) return;
+
+    const x = charts.tempChart.scales.x;
+    let min = Math.max(0, Math.floor(Number(x.min)));
+    let max = Math.min(masterData.timestamps.length - 1, Math.ceil(Number(x.max)));
+
+    if (!Number.isFinite(min) || !Number.isFinite(max) || min > max) return;
+
+    const now = performance.now();
+    if (now - lastStatsUpdate < 80) return;
+    lastStatsUpdate = now;
+
+    updateVisibleStats(min, max);
+}
+
+// ============================================================
+// STATS
+// ============================================================
+function calculateStatsWindow(arr, start, end) {
+    let curr = '--';
+    let min = Infinity;
+    let max = -Infinity;
+    let sum = 0;
+    let count = 0;
+
+    const s = Math.max(0, start);
+    const e = Math.min(arr.length - 1, end);
+
+    for (let i = s; i <= e; i++) {
+        const n = Number(arr[i]);
+        if (!Number.isFinite(n)) continue;
+        if (curr === '--') curr = n;
+        min = Math.min(min, n);
+        max = Math.max(max, n);
+        sum += n;
+        count++;
+    }
+
+    if (!count) return { curr:'--', min:'--', max:'--', avg:'--' };
+
+    return {
+        curr:Number.isInteger(curr) ? curr : Number(curr).toFixed(1),
+        min:Number(min).toFixed(1),
+        max:Number(max).toFixed(1),
+        avg:Number(sum / count).toFixed(1)
+    };
+}
+
+function updateVisibleStats(start, end) {
+    if (!masterData) return;
+
+    const t = calculateStatsWindow(masterData.airTemp,start,end);
+    const st = calculateStatsWindow(masterData.soilTemp,start,end);
+    const h = calculateStatsWindow(masterData.airHum,start,end);
+    const s = calculateStatsWindow(masterData.soilHum,start,end);
+    const p = calculateStatsWindow(masterData.pressure,start,end);
+    const l = calculateStatsWindow(masterData.lux,start,end);
+    const b = calculateStatsWindow(masterData.battPct,start,end);
+    const v = calculateStatsWindow(masterData.battVolt,start,end);
+    const it = calculateStatsWindow(masterData.internalTemp,start,end);
+
+    document.getElementById('sum_temp').innerHTML = `${t.curr} <span class="fs-5 text-muted">°C</span>`;
+    document.getElementById('stat_temp').innerText = `Min/Max: ${t.min} / ${t.max}`;
+
+    document.getElementById('sum_soil_temp').innerHTML = `${st.curr} <span class="fs-5 text-muted">°C</span>`;
+    document.getElementById('stat_soil_temp').innerText = `Min/Max: ${st.min} / ${st.max}`;
+
+    document.getElementById('sum_hum').innerHTML = `${h.curr} <span class="fs-5 text-muted">%</span>`;
+    document.getElementById('stat_hum').innerText = `Avg: ${h.avg}%`;
+
+    document.getElementById('sum_soil').innerHTML = `${s.curr} <span class="fs-5 text-muted">%</span>`;
+    document.getElementById('stat_soil').innerText = `Avg: ${s.avg}%`;
+
+    document.getElementById('sum_press').innerHTML = `${p.curr} <span class="fs-6 text-muted">hPa</span>`;
+    document.getElementById('stat_press').innerText = `Min/Max: ${p.min} / ${p.max}`;
+
+    document.getElementById('sum_lux').innerHTML = `${l.curr} <span class="fs-5 text-muted">Lx</span>`;
+    document.getElementById('stat_lux').innerText = `Max: ${l.max} Lx`;
+
+    document.getElementById('sum_batt').innerHTML = `${b.curr} <span class="fs-5 text-muted">%</span>`;
+    document.getElementById('stat_batt').innerText = `Volt: ${v.curr} V`;
+
+    document.getElementById('sum_internal_temp').innerHTML = `${it.curr} <span class="fs-6 text-muted">°C</span>`;
+    document.getElementById('stat_internal_temp').innerText = `Avg: ${it.avg} °C`;
+}
+
+// ============================================================
+// RANGE BUTTON
+// ============================================================
+async function updateChartRange(range) {
+    currentRange = range;
+    updateRangeButtons();
+
+    try {
+        if (range === '30d') {
+            const cache = getCache('master30d');
+            if (cache) {
+                masterData = normalizeData(cache.data);
+                masterKey = '30d';
+                applyCurrentViewport(true);
+
+                if (cache.age > CACHE_FRESH) {
+                    getMaster30d(false).catch(err => console.warn('Refresh 30d gagal:', err));
+                }
+                return;
+            }
+
+            // Kalau belum ada master 7d, ambil langsung.
+            const cache7 = getCache('master7d');
+            if (cache7) {
+                masterData = normalizeData(cache7.data);
+                masterKey = '7d';
+                applyCurrentViewport(true);
+                return;
+            }
+
+            await getMaster7d(false, false);
+            applyCurrentViewport(true);
+            return;
+        }
+
+        // 1h/24h/3d/7d semuanya memakai master 7d.
+        const cache7 = getCache('master7d');
+        if (cache7) {
+            masterData = normalizeData(cache7.data);
+            masterKey = '7d';
+            applyCurrentViewport(true);
+
+            if (cache7.age > CACHE_FRESH) {
+                getMaster7d(false, true).catch(err => console.warn('Background 7d gagal:', err));
+            }
+            return;
+        }
+
+        await getMaster7d(false, false);
+        applyCurrentViewport(true);
+    } catch (err) {
+        console.error('Range error:', err);
+        setStatus('Gagal memuat data', false);
+        Swal.fire({
+            icon:'error',
+            title:'Gagal Memuat Data',
+            text:err.message || 'Tidak dapat mengambil telemetry',
+            background:'#151B2B',
+            color:'#fff'
+        });
+    }
+}
+
+// ============================================================
+// BACKGROUND MASTER 7D
+// ============================================================
+async function backgroundRefresh7d() {
+    try {
+        const data = await fetchRangeFromGAS('7d', FETCH_TIMEOUT_MASTER);
+        saveCache('master7d', data);
+
+        // Hanya ganti data aktif jika user sedang memakai range <= 7d.
+        if (currentRange !== '30d') {
+            masterData = normalizeData(data);
+            masterKey = '7d';
+            applyCurrentViewport(true);
+        }
+    } catch (err) {
+        console.warn('Background master 7d gagal:', err);
+    }
+}
+
+function startBackgroundRefresh() {
+    if (backgroundTimer) clearInterval(backgroundTimer);
+
+    // Tarik master 7d setelah initial 24h sudah tampil.
+    backgroundRefresh7d();
+
+    // Saat halaman hidup, update master berkala.
+    backgroundTimer = setInterval(backgroundRefresh7d, BACKGROUND_REFRESH_MS);
+}
+
+// ============================================================
+// MANUAL REFRESH
+// ============================================================
+async function manualRefresh() {
+    const key = currentRange === '30d' ? '30d' : '7d';
+
+    Swal.fire({
+        title:'Memuat Data Baru...',
+        text:`Mengambil telemetry ${key} terbaru`,
+        background:'#151B2B',
+        color:'#fff',
+        allowOutsideClick:false,
+        didOpen:()=>Swal.showLoading()
+    });
+
+    try {
+        const data = await fetchRangeFromGAS(key, FETCH_TIMEOUT_MASTER);
+        saveCache(key === '7d' ? 'master7d' : 'master30d', data);
+        masterData = normalizeData(data);
+        masterKey = key;
+        applyCurrentViewport(true);
+        Swal.close();
+    } catch (err) {
+        Swal.close();
+        Swal.fire({
+            icon:'error',
+            title:'Refresh Gagal',
+            text:err.message || 'Tidak dapat mengambil data baru',
+            background:'#151B2B',
+            color:'#fff'
+        });
+    }
+}
+
+// ============================================================
+// CONFIG
+// ============================================================
+async function loadConfig() {
+    try {
+        const data = await fetchJSON(`${GAS_URL}?action=getConfig&_=${Date.now()}`, FETCH_TIMEOUT_INITIAL);
+
+        document.getElementById('opModeSwitch').checked = (data.opMode == 1);
+        document.getElementById('opModeSwitch').dispatchEvent(new Event('change'));
+
+        document.getElementById('read_interval').value = data.read_interval;
+        document.getElementById('val_read').innerText = data.read_interval;
+
+        document.getElementById('avg_window').value = data.avg_window;
+        document.getElementById('val_avg').innerText = data.avg_window;
+
+        document.getElementById('send_mode').value = data.send_mode;
+        toggleSendMode();
+
+        document.getElementById('send_interval').value = data.send_interval;
+        document.getElementById('val_send_int').innerText = data.send_interval;
+
+        document.getElementById('send_h1').value = data.send_h1;
+        document.getElementById('val_h1').innerText = data.send_h1;
+
+        document.getElementById('send_h2').value = data.send_h2;
+        document.getElementById('val_h2').innerText = data.send_h2;
+
+        document.getElementById('send_h3').value = data.send_h3;
+        document.getElementById('val_h3').innerText = data.send_h3;
+    } catch (err) {
+        console.warn('Config gagal:', err);
+        setStatus('Config gagal, grafik tetap dicoba', false);
+    }
+}
+
+function getAdminToken() {
+    return sessionStorage.getItem('samosir_admin_token') || '';
+}
+
+function setAdminToken(token) {
+    if (token) {
+        sessionStorage.setItem('samosir_admin_token', token);
+        document.getElementById('adminStatus').innerText = 'Admin aktif · sesi 6 jam';
+        document.getElementById('adminStatus').style.color = '#34D399';
+    } else {
+        sessionStorage.removeItem('samosir_admin_token');
+        document.getElementById('adminStatus').innerText = 'Kontrol terkunci';
+        document.getElementById('adminStatus').style.color = '#718096';
+    }
+}
+
+async function postForm(formData, timeout = 15000) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeout);
+    try {
+        const res = await fetch(GAS_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+            body: new URLSearchParams(formData).toString(),
+            cache: 'no-store',
+            signal: controller.signal
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return await res.json();
+    } finally {
+        clearTimeout(timer);
+    }
+}
+
+async function ensureAdminLogin() {
+    const existing = getAdminToken();
+    if (existing) return existing;
+
+    const result = await Swal.fire({
+        title: 'Login Admin',
+        text: 'Masukkan password untuk mengubah konfigurasi ESP32.',
+        input: 'password',
+        inputPlaceholder: 'Password admin',
+        inputAttributes: { autocomplete: 'current-password' },
+        showCancelButton: true,
+        confirmButtonText: 'Login',
+        cancelButtonText: 'Batal',
+        confirmButtonColor: '#2563EB',
+        background: '#151B2B',
+        color: '#fff',
+        allowOutsideClick: false,
+        preConfirm: async (password) => {
+            if (!password) {
+                Swal.showValidationMessage('Password wajib diisi.');
+                return false;
+            }
+            try {
+                const data = await postForm({ action: 'login', password }, 15000);
+                if (data.status !== 'success') {
+                    throw new Error(data.message || 'Login gagal');
+                }
+                return data.token;
+            } catch (err) {
+                Swal.showValidationMessage(err.message || 'Login gagal');
+                return false;
+            }
+        }
+    });
+
+    if (!result.isConfirmed || !result.value) return '';
+    setAdminToken(result.value);
+    return result.value;
+}
+
+async function updateConfig() {
+    const token = await ensureAdminLogin();
+    if (!token) return;
+
+    Swal.fire({
+        title:'Menyimpan Perintah...',
+        text:'Mengirim konfigurasi terautentikasi ke Data Center',
+        background:'#151B2B', color:'#fff', allowOutsideClick:false,
+        didOpen:()=>Swal.showLoading()
+    });
+
+    const opMode = document.getElementById('opModeSwitch').checked ? 1 : 2;
+    const read_int = document.getElementById('read_interval').value;
+    const avg_win = document.getElementById('avg_window').value;
+    const s_mode = document.getElementById('send_mode').value;
+    const s_int = document.getElementById('send_interval').value;
+    const h1 = document.getElementById('send_h1').value;
+    const h2 = document.getElementById('send_h2').value;
+    const h3 = document.getElementById('send_h3').value;
+
+    try {
+        const data = await postForm({
+            action: 'updateConfig',
+            token,
+            opMode,
+            read_interval: read_int,
+            avg_window: avg_win,
+            send_mode: s_mode,
+            send_interval: s_int,
+            send_h1: h1,
+            send_h2: h2,
+            send_h3: h3
+        }, 15000);
+
+        Swal.close();
+
+        if (data.status === 'success') {
+            Swal.fire({
+                icon:'success', title:'Berhasil Disimpan!',
+                text:'Konfigurasi tersimpan. ESP32 akan mengambilnya saat polling getConfig.',
+                background:'#151B2B', color:'#fff', confirmButtonColor:'#2563EB'
+            });
+            return;
+        }
+
+        if (data.status === 'unauthorized') {
+            setAdminToken('');
+            throw new Error('Sesi admin sudah kedaluwarsa. Login ulang.');
+        }
+
+        throw new Error(data.message || 'Config gagal');
+
+    } catch (err) {
+        Swal.close();
+        Swal.fire({
+            icon:'error', title:'Gagal Menyimpan',
+            text:err.message || 'Request gagal',
+            background:'#151B2B', color:'#fff'
+        });
+    }
+}
+
+
+// ============================================================
+// STARTUP OPTIMIZED
+// 1) Config paralel
+// 2) 24h tampil secepat mungkin
+// 3) Setelah tampil, master 7d ditarik di background
+// ============================================================
+async function loadAllData() {
+    setStatus('Memuat 24 jam terakhir...', true);
+
+    const configPromise = loadConfig();
+
+    try {
+        await getInitial24h();
+        applyCurrentViewport(true);
+    } catch (err) {
+        console.error('Initial 24h gagal:', err);
+        setStatus('Gagal mengambil data awal', false);
+    }
+
+    // Setelah grafik awal sudah tampil, mulai bangun master 7d.
+    startBackgroundRefresh();
+
+    await configPromise;
+}
+
+window.onload = () => {
+    setAdminToken(getAdminToken());
+    loadAllData();
+};
+
+// ============================================================
+// WEATHER API WIDGET
+// GAS URL hanya didefinisikan di index.html.
+// Halaman lain membaca URL ini dari localStorage.
+// ============================================================
+let weatherRefreshTimer = null;
+let currentSensorReadIntervalSec = 20;
+const WEATHER_CONFIG_KEY = 'SAMOSIR_GAS_URL';
+
+function setTextSafe(id, text) {
+    const el = document.getElementById(id);
+    if (el) el.innerText = text;
+}
+
+function showWeatherError(message) {
+    setTextSafe('weatherApiTime', message || 'Gagal memuat cuaca API');
+}
+
+function weatherValue(v, digits = 1, suffix = '') {
+    const n = Number(v);
+    return Number.isFinite(n) ? `${n.toFixed(digits)}${suffix}` : `--${suffix}`;
+}
+
+async function loadWeatherNow() {
+    try {
+        // Primary endpoint: backend langsung mengembalikan snapshot terbaru.
+        let res = await fetch(`${GAS_URL}?action=getWeatherNow&_=${Date.now()}`, {
+            cache: 'no-store',
+            credentials: 'omit'
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        let data = await res.json();
+        let w = (data && data.status === 'success') ? data.data : null;
+
+        // Fallback: jika getWeatherNow belum mengembalikan data,
+        // ambil baris terakhir dari Weather_API melalui series.
+        if (!w) {
+            const sr = await fetch(`${GAS_URL}?action=getWeatherSeries&range=24h&_=${Date.now()}`, {
+                cache: 'no-store',
+                credentials: 'omit'
+            });
+            if (!sr.ok) throw new Error(`Weather series HTTP ${sr.status}`);
+            const series = await sr.json();
+            const n = Array.isArray(series.timestamps) ? series.timestamps.length : 0;
+            if (!n) throw new Error('Weather_API belum memiliki data');
+            const i = n - 1;
+            w = {
+                timestamp: series.timestamps[i],
+                waktu: series.labels?.[i] || new Date(series.timestamps[i]).toLocaleString('id-ID'),
+                temp: series.temp?.[i],
+                humidity: series.humidity?.[i],
+                pressure: series.pressure?.[i],
+                soil_moisture: series.soilMoisture?.[i],
+                precipitation: series.precipitation?.[i],
+                rain: Number(series.precipitation?.[i] || 0) > 0 ? 1 : 0,
+                wind: series.wind?.[i],
+                cloud: series.cloud?.[i],
+                solar: series.solar?.[i]
+            };
+        }
+
+        setTextSafe('apiTempNow', weatherValue(w.temp, 1, ' °C'));
+        setTextSafe('apiHumNow', weatherValue(w.humidity, 1, ' %'));
+        setTextSafe('apiPressNow', weatherValue(w.pressure, 1, ' hPa'));
+        setTextSafe('apiRainNow', Number(w.rain) ? 'Hujan' : 'Tidak');
+        setTextSafe('apiWindNow', weatherValue(w.wind, 1, ' km/h'));
+        setTextSafe('apiCloudNow', weatherValue(w.cloud, 0, ' %'));
+        setTextSafe('apiSoilNow', weatherValue(w.soil_moisture, 1, ' %'));
+        setTextSafe('apiSolarNow', w.solar == null ? '-- W/m²' : weatherValue(w.solar, 0, ' W/m²'));
+        setTextSafe('apiIntervalNow', `${Number(w.read_interval || currentSensorReadIntervalSec)} s`);
+        setTextSafe('apiAvgNow', `${Number(w.avg_window || 60)} s`);
+        setTextSafe('weatherApiTime', w.waktu ? `Update: ${w.waktu}` : 'Update tersedia');
+
+        currentSensorReadIntervalSec = Number(w.read_interval) || currentSensorReadIntervalSec;
+        scheduleWeatherRefresh();
+    } catch (err) {
+        console.warn('Weather API:', err);
+        showWeatherError(`Weather API: ${err.message || 'gagal'}`);
+        scheduleWeatherRetry();
+    }
+}
+
+function scheduleWeatherRefresh() {
+    if (weatherRefreshTimer) clearTimeout(weatherRefreshTimer);
+    const ms = Math.max(60000, currentSensorReadIntervalSec * 1000);
+    weatherRefreshTimer = setTimeout(loadWeatherNow, ms);
+}
+
+function scheduleWeatherRetry() {
+    if (weatherRefreshTimer) clearTimeout(weatherRefreshTimer);
+    weatherRefreshTimer = setTimeout(loadWeatherNow, 60000);
+}
+
+window.addEventListener('load', () => {
+    loadWeatherNow();
+});
+
+</script>
+</body>
+</html>

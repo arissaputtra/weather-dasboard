@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Riwayat Database - ESP32 Telemetri</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+:root{--bg:#0B101E;--panel:#151B2B;--panel2:#101827;--border:#273246;--muted:#8EA0BA;--blue:#60A5FA}
+*{box-sizing:border-box} body{margin:0;background:var(--bg);color:#fff;font-family:Inter,sans-serif}
+.page{padding:24px 28px 34px}.top{display:flex;gap:14px;align-items:center;margin-bottom:20px}.menu-btn{width:46px;height:46px;border:1px solid var(--border);background:#111827;color:#fff;border-radius:13px;display:flex;align-items:center;justify-content:center;cursor:pointer}.brand{width:44px;height:44px;border-radius:13px;background:#2563EB;display:flex;align-items:center;justify-content:center}.title h1{margin:0;font-size:1.25rem}.title p{margin:2px 0 0;color:var(--muted);font-size:.82rem}.top-right{margin-left:auto;display:flex;gap:10px;align-items:center}.pill{padding:9px 13px;background:#121D30;border:1px solid var(--border);border-radius:12px;color:#CBD5E1;font-size:.82rem}.btn-main{border:1px solid #2F4B76;background:#172B4D;color:#CFE1FF;border-radius:11px;padding:9px 13px;font-weight:700}.card{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:16px;box-shadow:0 10px 30px rgba(0,0,0,.18)}.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px}.search{background:#0F1727;border:1px solid var(--border);border-radius:11px;color:#fff;padding:10px 12px;min-width:240px;outline:none}.table-wrap{overflow:auto;border:1px solid var(--border);border-radius:14px}.table{margin:0;min-width:1450px;color:#E5EDF8!important;--bs-table-color:#E5EDF8;--bs-table-bg:#0F1726}.table thead th{background:#111A2B!important;color:#AFC4E2!important;font-size:.72rem;text-transform:uppercase;letter-spacing:.55px;border-color:#223049;position:sticky;top:0;z-index:2;white-space:nowrap}.table tbody td{background:#0F1726!important;color:#E8EEF7!important;border-color:#26344A!important;vertical-align:middle;white-space:nowrap;font-size:.86rem;font-weight:500}.table tbody td *{color:inherit!important}.table tbody tr:nth-child(even) td{background:#111A2B!important}.table tbody tr:hover td{background:#121E31}.temp-air{color:#60A5FA!important;font-weight:700}.temp-soil{color:#FDBA3A!important;font-weight:700}.hum{color:#34D399!important;font-weight:700}.press{color:#C4B5FD!important;font-weight:700}.lux{color:#FBBF24!important;font-weight:700}.soil{color:#FB923C!important;font-weight:700}.battery{color:#22D3EE!important;font-weight:700}.rain{color:#34D399!important;font-weight:700}.muted{color:#A5B4C7!important}.pagination-box{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:14px;flex-wrap:wrap}.pagination-box .info{color:var(--muted);font-size:.82rem}.page-btn{border:1px solid var(--border);background:#101A2B;color:#E2E8F0;border-radius:10px;padding:8px 12px;cursor:pointer}.page-btn:disabled{opacity:.4;cursor:not-allowed}.drawer{position:fixed;inset:0;background:rgba(2,6,23,.55);opacity:0;visibility:hidden;transition:.2s;z-index:1090}.drawer.open{opacity:1;visibility:visible}.sidebar{position:fixed;left:0;top:0;bottom:0;width:290px;background:#101726;border-right:1px solid #263247;transform:translateX(-102%);transition:.25s;z-index:1100;padding:18px}.sidebar.open{transform:translateX(0)}.sidebar-brand{display:flex;align-items:center;gap:12px;padding:8px 4px 18px;border-bottom:1px solid #263247;margin-bottom:14px}.sidebar-brand .icon{width:44px;height:44px;border-radius:13px;background:#2563EB;display:flex;align-items:center;justify-content:center}.sidebar-brand strong{display:block}.sidebar-brand span{display:block;color:#7FA9F9;font-size:.72rem;font-weight:800}.close{margin-left:auto;width:34px;height:34px;border-radius:10px;border:1px solid #334155;background:#111827;color:#94A3B8}.sec{color:#64748B;font-size:.72rem;font-weight:800;letter-spacing:1px;text-transform:uppercase;margin:14px 8px 8px}.link{width:100%;display:flex;align-items:center;gap:12px;color:#CBD5E1;text-decoration:none;border:1px solid transparent;background:transparent;border-radius:13px;padding:12px 13px;margin-bottom:6px;font-weight:600}.link:hover{background:#172033;color:#fff}.link.active{background:#1B2A49;border-color:#29477C;color:#60A5FA}.link i{width:20px;text-align:center}.empty{padding:40px;text-align:center;color:var(--muted)}
+@media(max-width:768px){.page{padding:16px}.top-right{width:100%;margin-left:0}.top{flex-wrap:wrap}.search{min-width:100%;width:100%}}
+</style>
+
+<style>
+.pill.readonly{
+  color:#86EFAC!important;
+  border-color:#245E46!important;
+  background:#10271D!important;
+}
+.pill.loading{
+  color:#FDE68A!important;
+  border-color:#6B5B1A!important;
+  background:#2A2410!important;
+}
+</style>
+
+</head>
+<body>
+<div class="drawer" id="drawer" onclick="closeMenu()"></div>
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand"><div class="icon"><i class="fa-solid fa-microchip"></i></div><div><strong>ESP32 Telemetri</strong><span>NODE HUB</span></div><button class="close ms-auto" onclick="closeMenu()"><i class="fa-solid fa-xmark"></i></button></div>
+  <div class="sec">Menu Utama</div>
+  <a class="link" href="index.html"><i class="fa-solid fa-chart-line"></i><span>Telemetri &amp; Kontrol</span></a>
+  <a class="link active" href="riwayat.html"><i class="fa-solid fa-clock-rotate-left"></i><span>Riwayat Database</span></a>
+  <a class="link" href="perbandingan.html"><i class="fa-solid fa-cloud-sun"></i><span>Sensor vs API Cuaca</span></a>
+</aside>
+
+<main class="page">
+  <div class="top">
+    <button class="menu-btn" onclick="openMenu()"><i class="fa-solid fa-bars"></i></button>
+    <div class="brand"><i class="fa-solid fa-database"></i></div>
+    <div class="title"><h1>Riwayat Database</h1><p>Data telemetri tersimpan dari Google Sheets · Read-only</p></div>
+    <div class="top-right"><div class="pill" id="status">Memuat...</div><button class="btn-main" onclick="loadHistory()"><i class="fa-solid fa-rotate-right me-1"></i>Refresh</button></div>
+  </div>
+
+  <div class="card">
+    <div class="toolbar">
+      <input class="search" id="search" placeholder="Cari waktu / hujan / relay ..." oninput="renderTable()">
+      <div class="pill" id="countInfo">-</div>
+    </div>
+    <div class="table-wrap">
+      <table class="table table-sm align-middle">
+        <thead><tr>
+          <th>ID</th><th>Waktu Rekam</th><th>Suhu Udara</th><th>Suhu Tanah</th><th>Kelembapan</th><th>Tekanan</th><th>Cahaya</th><th>Tanah %</th><th>Baterai</th><th>Hujan</th><th>R1 / R2</th>
+        </tr></thead>
+        <tbody id="tbody"><tr><td colspan="11" class="empty">Memuat data...</td></tr></tbody>
+      </table>
+    </div>
+    <div class="pagination-box">
+      <div class="info" id="pageInfo">Halaman -</div>
+      <div class="d-flex gap-2"><button class="page-btn" id="prevBtn" onclick="prevPage()">← Sebelumnya</button><button class="page-btn" id="nextBtn" onclick="nextPage()">Berikutnya →</button></div>
+    </div>
+  </div>
+</main>
+
+
+<script>
+const SAMOSIR_CONFIG_KEY = 'SAMOSIR_GAS_URL';
+function getGasUrl(){ const u=localStorage.getItem(SAMOSIR_CONFIG_KEY); if(!u) throw new Error('GAS URL belum tersedia. Buka index.html terlebih dahulu.'); return u; }
+
+const LIMIT = 50;
+const LEGACY_CONCURRENCY = 8;
+
+let page = 1;
+let total = 0;
+let totalPages = 1;
+let rows = [];
+let legacyMode = false;
+let loading = false;
+
+function openMenu() {
+  document.getElementById('sidebar').classList.add('open');
+  document.getElementById('drawer').classList.add('open');
+}
+function closeMenu() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('drawer').classList.remove('open');
+}
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeMenu();
+});
+
+function esc(v) {
+  return String(v ?? '').replace(/[&<>'"]/g, m => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    "'": '&#39;',
+    '"': '&quot;'
+  }[m]));
+}
+
+function fmt(v, digits = 2) {
+  const n = Number(v);
+  return Number.isFinite(n) ? n.toFixed(digits) : '-';
+}
+
+function setStatus(text, tone = '') {
+  const el = document.getElementById('status');
+  el.textContent = text;
+  el.className = 'pill' + (tone ? ' ' + tone : '');
+}
+
+async function fetchJson(url) {
+  const res = await fetch(url, {
+    method: 'GET',
+    cache: 'no-store',
+    credentials: 'omit'
+  });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const data = await res.json();
+  if (data.status && data.status !== 'success') {
+    throw new Error(data.message || 'Gagal memuat data');
+  }
+  return data;
+}
+
+async function fetchNormalPage(requestedPage) {
+  const url =
+    `${getGasUrl()}?action=getHistory&limit=${LIMIT}&page=${requestedPage}&_=${Date.now()}`;
+  return fetchJson(url);
+}
+
+/*
+ * Compatibility fallback:
+ * sebagian deployment lama mengabaikan limit dan hanya mengembalikan
+ * 1 row, tetapi masih menghormati parameter page.
+ *
+ * Dalam kondisi tersebut kita ambil 50 row untuk halaman aktif
+ * dengan limit=1 secara paralel-terkontrol.
+ */
+async function fetchLegacyPage(requestedPage, totalRows) {
+  const globalStart = (requestedPage - 1) * LIMIT + 1;
+  const globalEnd = Math.min(globalStart + LIMIT - 1, totalRows);
+  const pageNumbers = [];
+
+  for (let n = globalStart; n <= globalEnd; n++) {
+    pageNumbers.push(n);
+  }
+
+  const out = [];
+  let cursor = 0;
+
+  async function worker() {
+    while (true) {
+      const idx = cursor++;
+      if (idx >= pageNumbers.length) return;
+
+      const p = pageNumbers[idx];
+      const url =
+        `${getGasUrl()}?action=getHistory&limit=1&page=${p}&_=${Date.now()}_${p}`;
+
+      try {
+        const data = await fetchJson(url);
+        if (Array.isArray(data.rows) && data.rows.length) {
+          out.push(data.rows[0]);
+        }
+      } catch (err) {
+        console.warn('Legacy row gagal:', p, err);
+      }
+    }
+  }
+
+  const workers = Array.from(
+    { length: Math.min(LEGACY_CONCURRENCY, pageNumbers.length) },
+    () => worker()
+  );
+
+  await Promise.all(workers);
+
+  // Urutkan mengikuti ID terbaru -> lama.
+  out.sort((a, b) => Number(b.id || 0) - Number(a.id || 0));
+
+  // Hilangkan duplikat jika deployment lama mengembalikan row yang sama.
+  const seen = new Set();
+  const unique = [];
+  for (const row of out) {
+    const key = String(row.id ?? row.waktu ?? Math.random());
+    if (seen.has(key)) continue;
+    seen.add(key);
+    unique.push(row);
+  }
+
+  if (unique.length < Math.min(2, pageNumbers.length)) {
+    throw new Error(
+      'Backend yang dipakai belum mendukung pagination. Deploy GS versi terbaru, lalu samakan GAS_URL.'
+    );
+  }
+
+  return unique;
+}
+
+async function loadHistory(options = {}) {
+  const requestedPage = options.page ?? page;
+  if (loading) return;
+
+  loading = true;
+  setStatus('Memuat...', 'loading');
+
+  document.getElementById('tbody').innerHTML =
+    '<tr><td colspan="11" class="empty">Mengambil data...</td></tr>';
+
+  try {
+    // Normal mode: idealnya 50 row sekali request.
+    const data = await fetchNormalPage(requestedPage);
+
+    total = Number(data.total || 0);
+
+    let serverPages = Number(data.totalPages || 0);
+    if (!serverPages && total > 0) {
+      serverPages = Math.max(1, Math.ceil(total / LIMIT));
+    }
+
+    totalPages = serverPages || 1;
+
+    let receivedRows = Array.isArray(data.rows) ? data.rows : [];
+
+    // Jika server mengembalikan cuma 1 row padahal total > LIMIT,
+    // aktifkan fallback kompatibilitas.
+    const suspiciousLegacy =
+      !data.totalPages &&
+      total > LIMIT &&
+      receivedRows.length <= 1;
+
+    if (suspiciousLegacy) {
+      legacyMode = true;
+      setStatus('Mode kompatibilitas...', 'loading');
+
+      receivedRows = await fetchLegacyPage(requestedPage, total);
+    } else {
+      legacyMode = false;
+    }
+
+    page = requestedPage;
+    rows = receivedRows;
+
+    if (legacyMode) {
+      setStatus(
+        `${total.toLocaleString('id-ID')} data · kompatibilitas`,
+        'readonly'
+      );
+    } else {
+      setStatus(
+        `${total.toLocaleString('id-ID')} data`,
+        'readonly'
+      );
+    }
+
+    renderTable();
+
+  } catch (err) {
+    console.error(err);
+    setStatus('Gagal');
+    document.getElementById('tbody').innerHTML =
+      `<tr><td colspan="11" class="empty">${esc(err.message)}</td></tr>`;
+    document.getElementById('countInfo').textContent = 'Gagal memuat';
+    document.getElementById('pageInfo').textContent = 'Halaman -';
+  } finally {
+    loading = false;
+    updatePagination();
+  }
+}
+
+function renderTable() {
+  const q = document.getElementById('search').value.trim().toLowerCase();
+
+  // Search pada halaman aktif agar tidak perlu memuat semua database.
+  const filtered = rows.filter(r => {
+    if (!q) return true;
+    return [
+      r.id,
+      r.waktu,
+      r.temp_internal,
+      r.temp_ds18b20,
+      r.temp_aht,
+      r.humidity_aht,
+      r.pressure_bmp,
+      r.lux_bh1750,
+      r.soil_percent,
+      r.battery_voltage,
+      r.battery_percent,
+      r.rain_status,
+      r.relay1,
+      r.relay2
+    ].join(' ').toLowerCase().includes(q);
+  });
+
+  const tbody = document.getElementById('tbody');
+
+  if (!filtered.length) {
+    tbody.innerHTML =
+      '<tr><td colspan="11" class="empty">Tidak ada data pada halaman ini.</td></tr>';
+  } else {
+    tbody.innerHTML = filtered.map(r => `
+      <tr>
+        <td class="muted">#${esc(r.id)}</td>
+        <td>${esc(r.waktu)}</td>
+        <td class="temp-air">${fmt(r.temp_aht)}°C</td>
+        <td class="temp-soil">${fmt(r.temp_ds18b20)}°C</td>
+        <td class="hum">${fmt(r.humidity_aht)}%</td>
+        <td class="press">${fmt(r.pressure_bmp)} hPa</td>
+        <td class="lux">${fmt(r.lux_bh1750, 0)}</td>
+        <td class="soil">${fmt(r.soil_percent, 0)}%</td>
+        <td class="battery">
+          ${fmt(r.battery_percent, 0)}%
+          <span class="muted">(${fmt(r.battery_voltage, 3)}V)</span>
+        </td>
+        <td class="rain">${esc(r.rain_status ?? '-')}</td>
+        <td>${esc(r.relay1 ?? '-')} / ${esc(r.relay2 ?? '-')}</td>
+      </tr>
+    `).join('');
+  }
+
+  document.getElementById('countInfo').textContent =
+    `${filtered.length.toLocaleString('id-ID')} tampil · ${total.toLocaleString('id-ID')} total`;
+
+  updatePagination();
+}
+
+function updatePagination() {
+  document.getElementById('pageInfo').textContent =
+    `Halaman ${page.toLocaleString('id-ID')} / ${totalPages.toLocaleString('id-ID')}`;
+
+  document.getElementById('prevBtn').disabled =
+    loading || page <= 1;
+
+  document.getElementById('nextBtn').disabled =
+    loading || page >= totalPages;
+}
+
+async function nextPage() {
+  if (page >= totalPages || loading) return;
+  await loadHistory({ page: page + 1 });
+}
+
+async function prevPage() {
+  if (page <= 1 || loading) return;
+  await loadHistory({ page: page - 1 });
+}
+
+document.getElementById('search').addEventListener('input', renderTable);
+
+// Security:
+// Halaman ini READ-ONLY. Tidak ada endpoint updateConfig/login/admin
+// di browser, sehingga file publik ini tidak memiliki kemampuan
+// mengubah relay maupun konfigurasi ESP32.
+
+loadHistory({ page: 1 });
+</script>
+
+</body>
+</html>
